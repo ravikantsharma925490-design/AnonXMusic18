@@ -140,7 +140,7 @@ class YouTube:
         return tracks
 
     async def download(self, video_id: str, video: bool = False) -> str | None:
-        url = self.base + video_id
+        url = self.base + "/watch?v=" + video_id if not video_id.startswith("http") else video_id
         ext = "mp4" if video else "webm"
         filename = f"downloads/{video_id}.{ext}"
 
@@ -158,7 +158,19 @@ class YouTube:
             "logger": DummyLogger(),
             "nocheckcertificate": True,
             "cookiefile": cookie,
-            "remote_components": ["ejs:github"],
+            
+            # 🔥 CLIENT SPOOFING & IMPERSONATION FOR RENDER BYPASS
+            "extractor_args": {
+                "youtube": {
+                    "player_client": ["ios", "web_safari", "web_music", "default"],
+                    "skip": ["webpage"]
+                }
+            },
+            "http_headers": {
+                "User-Agent": "Mozilla/5.0 (iPhone; CPU iPhone OS 17_5 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.5 Mobile/15E148 Safari/604.1",
+                "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+                "Accept-Language": "en-US,en;q=0.9",
+            }
         }
 
         if video:
@@ -177,7 +189,8 @@ class YouTube:
             with yt_dlp.YoutubeDL(ydl_opts) as ydl:
                 try:
                     ydl.download([url])
-                except (yt_dlp.utils.DownloadError, yt_dlp.utils.ExtractorError):
+                except (yt_dlp.utils.DownloadError, yt_dlp.utils.ExtractorError) as err:
+                    logger.error(f"Download Error Trace: {err}")
                     return None
                 except Exception as ex:
                     logger.warning("Download failed: %s", ex)
