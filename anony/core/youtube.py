@@ -47,20 +47,41 @@ class YouTube:
 
     def get_cookies(self):
         if not self.checked:
-            # 1. पहले Render Env (Vars) से कुकीज़ टेक्स्ट चेक करें
             env_cookies = os.getenv("YT_DLP_COOKIES")
             if env_cookies:
                 try:
                     os.makedirs(self.cookie_dir, exist_ok=True)
-                    with open(self.cookie_file_path, "w", encoding="utf-8") as f:
-                        f.write(env_cookies)
+                    
+                    lines = env_cookies.splitlines()
+                    clean_lines = ["# Netscape HTTP Cookie File", "# http://haxx.se", ""]
+                    seen_tokens = set()
+
+                    for line in lines:
+                        line_str = line.strip()
+                        if not line_str or line_str.startswith("#"):
+                            continue
+                        
+                        parts = re.split(r'\t|\s+', line_str)
+                        if len(parts) >= 7:
+                            cookie_name = parts[5]
+                            
+                            if cookie_name in ["__Secure-ROLLOUT_TOKEN", "__Secure-YNID", "VISITOR_INFO1_LIVE"]:
+                                if cookie_name in seen_tokens:
+                                    continue
+                                seen_tokens.add(cookie_name)
+                                
+                            clean_line = "\t".join(parts[:7])
+                            clean_lines.append(clean_line)
+
+                    with open(self.cookie_file_path, "w", encoding="utf-8", newline="\n") as f:
+                        f.write("\n".join(clean_lines) + "\n")
+                        
                     if self.cookie_file_path not in self.cookies:
                         self.cookies.append(self.cookie_file_path)
-                    logger.info("Cookies loaded successfully from Environment Variables!")
+                    logger.info("Cookies filtered, corruptions removed, and saved successfully!")
                 except Exception as e:
-                    logger.error(f"Failed to save cookies from Env: {e}")
+                    logger.error(f"Failed to filter and save cookies from Env: {e}")
             
-            # 2. अगर Env में नहीं है, तो फोल्डर के अंदर की फाइल्स चेक करें
             if not self.cookies and os.path.exists(self.cookie_dir):
                 for file in os.listdir(self.cookie_dir):
                     if file.endswith(".txt"):
@@ -158,8 +179,6 @@ class YouTube:
             "logger": DummyLogger(),
             "nocheckcertificate": True,
             "cookiefile": cookie,
-            
-            # 🔥 CLIENT SPOOFING & IMPERSONATION FOR RENDER BYPASS
             "extractor_args": {
                 "youtube": {
                     "player_client": ["ios", "web_safari", "web_music", "default"],
