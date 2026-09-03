@@ -10,3 +10,4 @@ __pycache__/
 anony/cookies/*.txt
 *.session
 *.session-journal
+RUN pip install spotdl && spotdl --download-deno
