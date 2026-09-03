@@ -2,7 +2,6 @@
 # Licensed under the MIT License.
 # This file is part of AnonXMusic
 
-
 import os
 import re
 import yt_dlp
@@ -29,10 +28,11 @@ class DummyLogger:
 
 class YouTube:
     def __init__(self):
-        self.base = "https://www.youtube.com/watch?v="
+        self.base = "https://youtube.com"
         self.cookies = []
         self.checked = False
-        self.cookie_dir = "anony/cookies"
+        self.cookie_dir = os.path.join(os.getcwd(), "anony", "cookies")
+        self.cookie_file_path = os.path.join(self.cookie_dir, "cookies.txt")
         self.warned = False
         self.regex = re.compile(
             r"(https?://)?(www\.|m\.|music\.)?"
@@ -47,10 +47,28 @@ class YouTube:
 
     def get_cookies(self):
         if not self.checked:
-            for file in os.listdir(self.cookie_dir):
-                if file.endswith(".txt"):
-                    self.cookies.append(f"{self.cookie_dir}/{file}")
+            # 1. पहले Render Env (Vars) से कुकीज़ टेक्स्ट चेक करें
+            env_cookies = os.getenv("YT_DLP_COOKIES")
+            if env_cookies:
+                try:
+                    os.makedirs(self.cookie_dir, exist_ok=True)
+                    with open(self.cookie_file_path, "w", encoding="utf-8") as f:
+                        f.write(env_cookies)
+                    if self.cookie_file_path not in self.cookies:
+                        self.cookies.append(self.cookie_file_path)
+                    logger.info("Cookies loaded successfully from Environment Variables!")
+                except Exception as e:
+                    logger.error(f"Failed to save cookies from Env: {e}")
+            
+            # 2. अगर Env में नहीं है, तो फोल्डर के अंदर की फाइल्स चेक करें
+            if not self.cookies and os.path.exists(self.cookie_dir):
+                for file in os.listdir(self.cookie_dir):
+                    if file.endswith(".txt"):
+                        full_path = os.path.join(self.cookie_dir, file)
+                        if full_path not in self.cookies:
+                            self.cookies.append(full_path)
             self.checked = True
+
         if not self.cookies:
             if not self.warned:
                 self.warned = True
@@ -60,13 +78,14 @@ class YouTube:
 
     async def save_cookies(self, urls: list[str]) -> None:
         logger.info("Saving cookies from urls...")
+        os.makedirs(self.cookie_dir, exist_ok=True)
         async with aiohttp.ClientSession() as session:
             for url in urls:
                 name = url.split("/")[-1]
-                link = "https://batbin.me/raw/" + name
+                link = "https://batbin.me" + name
                 async with session.get(link) as resp:
                     resp.raise_for_status()
-                    with open(f"{self.cookie_dir}/{name}.txt", "wb") as fw:
+                    with open(os.path.join(self.cookie_dir, f"{name}.txt"), "wb") as fw:
                         fw.write(await resp.read())
         logger.info(f"Cookies saved in {self.cookie_dir}.")
 
