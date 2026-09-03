@@ -10,8 +10,9 @@ import asyncio
 
 from pyrogram import filters, types
 
-# Safe global initialization mapping
+# Safe direct module initialization
 from anony import app, config, db, lang, queue, tg, yt
+from anony.core.custom import Anon  # Direct load to bypass __init__ loop
 from anony.helpers import buttons, utils
 from anony.helpers._play import checkUB
 
@@ -32,7 +33,6 @@ async def background_file_downloader(query: str, chat_id: int, user_id: int, mes
     os.makedirs(download_dir, exist_ok=True)
     
     try:
-        # Utilizing fallback safe pipeline stream flags
         command = f'spotdl download "{query}" --output "{download_dir}/%(title)s.%(ext)s" --format mp3 --use-sequential-workers'
         process = await asyncio.create_subprocess_shell(
             command,
@@ -277,8 +277,8 @@ async def play_hndlr(
                 )
 
     try:
-        # 🔥 FUNCTIONAL LAYER SAFE RUN: Import locally inside execution flow to break dependency loops
-        from anony import anon
+        # Dynamic isolated declaration
+        anon = Anon()
 
         await anon.play_media(
             chat_id=m.chat.id,
