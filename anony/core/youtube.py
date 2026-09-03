@@ -26,6 +26,7 @@ class DummyLogger:
     def error(self, msg):
         pass
 
+
 class YouTube:
     def __init__(self):
         self.base = "https://youtube.com"
@@ -169,7 +170,7 @@ class YouTube:
             return filename
 
         cookie = self.get_cookies()
-               base_opts = {
+        base_opts = {
             "outtmpl": "downloads/%(id)s.%(ext)s",
             "quiet": True,
             "noplaylist": True,
@@ -179,11 +180,9 @@ class YouTube:
             "logger": DummyLogger(),
             "nocheckcertificate": True,
             "cookiefile": cookie,
-            
-            # 🔥 CRITICAL 2026 BYPASS: FORCE MOBILE WEB TO SKIPP PO-TOKEN ENFORCEMENT
             "extractor_args": {
                 "youtube": {
-                    "player_client": ["mweb", "ios"], # Strictly use mobile web endpoints
+                    "player_client": ["mweb", "ios"],
                     "player_skip": ["configs", "webpage"],
                 }
             },
@@ -193,7 +192,6 @@ class YouTube:
                 "Accept-Language": "en-US,en;q=0.9",
             }
         }
-
 
         if video:
             ydl_opts = {
