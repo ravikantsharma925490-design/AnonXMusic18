@@ -169,7 +169,7 @@ class YouTube:
             return filename
 
         cookie = self.get_cookies()
-        base_opts = {
+               base_opts = {
             "outtmpl": "downloads/%(id)s.%(ext)s",
             "quiet": True,
             "noplaylist": True,
@@ -179,10 +179,12 @@ class YouTube:
             "logger": DummyLogger(),
             "nocheckcertificate": True,
             "cookiefile": cookie,
+            
+            # 🔥 CRITICAL 2026 BYPASS: FORCE MOBILE WEB TO SKIPP PO-TOKEN ENFORCEMENT
             "extractor_args": {
                 "youtube": {
-                    "player_client": ["ios", "web_safari", "web_music", "default"],
-                    "skip": ["webpage"]
+                    "player_client": ["mweb", "ios"], # Strictly use mobile web endpoints
+                    "player_skip": ["configs", "webpage"],
                 }
             },
             "http_headers": {
@@ -191,6 +193,7 @@ class YouTube:
                 "Accept-Language": "en-US,en;q=0.9",
             }
         }
+
 
         if video:
             ydl_opts = {
