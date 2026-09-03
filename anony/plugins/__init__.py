@@ -2,22 +2,34 @@
 # Licensed under the MIT License.
 # This file is part of AnonXMusic
 
+import logging
+from pyrogram import Client
+from .core.bot import Bot
+from .core.dir import dirr
+from .core.git import git
+from .core.userbot import Userbot
+from .misc import dbb, heroku, sudo
 
-from pathlib import Path
+# 1. Initialize Loggers
+logging.basicConfig(
+    format="[%(asctime)s - %(levelname)s] - %(name)s: %(message)s",
+    level=logging.INFO,
+)
+logger = logging.getLogger("anony")
 
-def _list_modules():
-    """
-    List all Python module filenames (without extension) in the current directory,
-    excluding the __init__.py file.
+# 2. Directory and Environment configurations 
+dirr()
+git()
+dbb()
+heroku()
+sudo()
 
-    Returns:
-        list: A list of module names as strings.
-    """
-    mod_dir = Path(__file__).parent
-    return [
-        file.stem
-        for file in mod_dir.glob("*.py")
-        if file.is_file() and file.name != "__init__.py"
-    ]
+# 3. Structural class declarations
+app = Bot()
+userbot = Userbot()
 
-all_modules = frozenset(sorted(_list_modules()))
+# Explicit global class object linking to avoid client spec errors
+from .core.custom import Anon
+anon = Anon()
+
+__all__ = ["app", "userbot", "anon", "logger"]
