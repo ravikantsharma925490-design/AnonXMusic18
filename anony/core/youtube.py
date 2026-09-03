@@ -64,7 +64,7 @@ class YouTube:
                         
                         parts = re.split(r'\t|\s+', line_str)
                         if len(parts) >= 7:
-                            cookie_name = parts[5]
+                            cookie_name = parts
                             
                             if cookie_name in ["__Secure-ROLLOUT_TOKEN", "__Secure-YNID", "VISITOR_INFO1_LIVE"]:
                                 if cookie_name in seen_tokens:
@@ -170,6 +170,9 @@ class YouTube:
             return filename
 
         cookie = self.get_cookies()
+        po_token = os.getenv("YT_DLP_PO_TOKEN", "")
+        visitor_data = os.getenv("YT_DLP_VISITOR_DATA", "")
+
         base_opts = {
             "outtmpl": "downloads/%(id)s.%(ext)s",
             "quiet": True,
@@ -181,15 +184,17 @@ class YouTube:
             "nocheckcertificate": True,
             "cookiefile": cookie,
             
-            # 🔥 BYPASS MULTIPLE LOGIC FOR EXTRACTOR FIX
+            # 🔥 FORCE INJECT PO-TOKEN INTO YT ENGINE CONFIG
             "extractor_args": {
                 "youtube": {
-                    "player_client": ["web_safari", "ios", "mweb", "default"],
-                    "player_skip": ["webpage", "configs"]
+                    "player_client": ["mweb"],
+                    "player_skip": ["webpage", "configs"],
+                    "po_token": f"web+fveUbe_7vA_:{po_token}" if po_token else None,
+                    "visitor_data": visitor_data if visitor_data else None,
                 }
             },
             "http_headers": {
-                "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.5 Safari/605.1.15",
+                "User-Agent": "Mozilla/5.0 (iPhone; CPU iPhone OS 17_5 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.5 Mobile/15E148 Safari/604.1",
                 "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
                 "Accept-Language": "en-US,en;q=0.9",
             }
