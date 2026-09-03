@@ -26,15 +26,12 @@ def playlist_to_queue(chat_id: int, tracks: list) -> str:
     return text
 
 
-# Render special: Parallel background task to handle high-quality audio file transmission 
 async def background_file_downloader(query: str, chat_id: int, user_id: int, message_id: int, mention: str):
-    # Unique isolated directory structure for parallel concurrency downloads
     download_dir = f"/tmp/spotdl_play_{user_id}_{message_id}"
     os.makedirs(download_dir, exist_ok=True)
     
     try:
-        # Executes spotDL processing layer silently in background
-        command = f'spotdl download "{query}" --output "{download_dir}/%(title)s.%(ext)s" --format mp3'
+        command = f'spotdl download "{query}" --output "{download_dir}/%(title)s.%(ext)s" --format mp3 --use-sequential-workers'
         process = await asyncio.create_subprocess_shell(
             command,
             stdout=asyncio.subprocess.PIPE,
@@ -42,12 +39,10 @@ async def background_file_downloader(query: str, chat_id: int, user_id: int, mes
         )
         await process.communicate()
 
-        # Scans for compiled audio files
         audio_files = glob.glob(os.path.join(download_dir, "*.mp3"))
         if audio_files:
             for file_path in audio_files:
                 file_name = os.path.basename(file_path)
-                # Dispatch real Telegram audio item alongside inline mention parameters
                 await app.send_audio(
                     chat_id=chat_id,
                     audio=file_path,
@@ -57,7 +52,6 @@ async def background_file_downloader(query: str, chat_id: int, user_id: int, mes
     except Exception as e:
         print(f"[BACKGROUND MP3 DOWNLOAD ERROR]: {str(e)}")
     finally:
-        # Avoid disk leak failure rules on cloud environment
         if os.path.exists(download_dir):
             shutil.rmtree(download_dir)
 
@@ -89,18 +83,12 @@ async def play_hndlr(
     )
 
     tracks = []
-    search_query = None # Background processing query parameter
+    search_query = None
 
-    # ---------------------------------
-    # REPLY MEDIA
-    # ---------------------------------
     if media:
         setattr(sent, "lang", m.lang)
         file = await tg.download(m.reply_to_message, sent)
 
-    # ---------------------------------
-    # M3U8
-    # ---------------------------------
     elif m3u8:
         file = await tg.process_m3u8(
             url,
@@ -108,11 +96,8 @@ async def play_hndlr(
             video
         )
 
-    # ---------------------------------
-    # URL / PLAYLIST
-    # ---------------------------------
     elif url:
-        search_query = url # Maps target URL string directly
+        search_query = url
         if "playlist" in url.lower():
 
             await sent.edit_text(
@@ -151,14 +136,10 @@ async def play_hndlr(
                 )
             )
 
-    # ---------------------------------
-    # SONG NAME SEARCH
-    # /play Kesariya
-    # ---------------------------------
     elif len(m.command) >= 2:
 
         query = " ".join(m.command[1:]).strip()
-        search_query = query # Maps query string values directly
+        search_query = query
 
         if not query:
             return await sent.edit_text(
@@ -178,17 +159,11 @@ async def play_hndlr(
                 )
             )
 
-    # ---------------------------------
-    # NO INPUT
-    # ---------------------------------
     if not file:
         return await sent.edit_text(
             m.lang["play_usage"]
         )
 
-    # ---------------------------------
-    # DURATION LIMIT
-    # ---------------------------------
     if file.duration_sec > config.DURATION_LIMIT:
 
         return await sent.edit_text(
@@ -197,9 +172,6 @@ async def play_hndlr(
             )
         )
 
-    # ---------------------------------
-    # LOGGER
-    # ---------------------------------
     if await db.is_logger():
 
         await utils.play_log(
@@ -211,9 +183,6 @@ async def play_hndlr(
 
     file.user = mention
 
-    # ---------------------------------
-    # QUEUE
-    # ---------------------------------
     if force:
 
         queue.force_add(
@@ -228,7 +197,6 @@ async def play_hndlr(
             file
         )
 
-        # Song already playing
         if position != 0 or await db.get_call(m.chat.id):
 
             await sent.edit_text(
@@ -246,7 +214,6 @@ async def play_hndlr(
                 ),
             )
 
-            # Fire off background media fetcher even if track is placed in playback pipeline queue
             if search_query:
                 asyncio.create_task(
                     background_file_downloader(
@@ -254,7 +221,6 @@ async def play_hndlr(
                     )
                 )
 
-            # Add playlist tracks
             if tracks:
 
                 added = playlist_to_queue(
@@ -271,9 +237,6 @@ async def play_hndlr(
 
             return
 
-    # ---------------------------------
-    # DOWNLOAD / CACHE (Voice Chat Audio Layer Engine)
-    # ---------------------------------
     if not file.file_path:
 
         extension = "mp4" if video else "webm"
@@ -282,7 +245,6 @@ async def play_hndlr(
             f"downloads/{file.id}.{extension}"
         )
 
-        # Existing cached file
         if Path(fname).exists():
 
             file.file_path = fname
@@ -312,9 +274,6 @@ async def play_hndlr(
                     "Check the server logs/cookies."
                 )
 
-    # ---------------------------------
-    # PLAY IN VOICE CHAT
-    # ---------------------------------
     try:
 
         await anon.play_media(
@@ -323,7 +282,6 @@ async def play_hndlr(
             media=file
         )
         
-        # Fire off non-blocking async background thread downoader immediately after voice link initialization
         if search_query:
             asyncio.create_task(
                 background_file_downloader(
@@ -342,9 +300,6 @@ async def play_hndlr(
             "Please check the assistant and PyTgCalls logs."
         )
 
-    # ---------------------------------
-    # PLAYLIST QUEUE
-    # ---------------------------------
     if not tracks:
         return
 
