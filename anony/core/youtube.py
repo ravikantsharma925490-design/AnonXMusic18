@@ -170,9 +170,6 @@ class YouTube:
             return filename
 
         cookie = self.get_cookies()
-        po_token = os.getenv("YT_DLP_PO_TOKEN", "")
-        visitor_data = os.getenv("YT_DLP_VISITOR_DATA", "")
-
         base_opts = {
             "outtmpl": "downloads/%(id)s.%(ext)s",
             "quiet": True,
@@ -184,18 +181,16 @@ class YouTube:
             "nocheckcertificate": True,
             "cookiefile": cookie,
             
-            # 🔥 FORCE INJECT PO-TOKEN INTO YT ENGINE CONFIG
+            # 🔥 THE 2026 UNBREAKABLE CLIENT FORCES VR/EMBED CHANNELS (NO TOKENS REQUIRED)
             "extractor_args": {
                 "youtube": {
-                    "player_client": ["mweb"],
-                    "player_skip": ["webpage", "configs"],
-                    "po_token": f"web+fveUbe_7vA_:{po_token}" if po_token else None,
-                    "visitor_data": visitor_data if visitor_data else None,
+                    "player_client": ["android_vr", "tvembedded", "mweb", "default"],
+                    "player_skip": ["webpage", "configs"]
                 }
             },
             "http_headers": {
-                "User-Agent": "Mozilla/5.0 (iPhone; CPU iPhone OS 17_5 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.5 Mobile/15E148 Safari/604.1",
-                "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+                "User-Agent": "Mozilla/5.0 (Linux; Android 10; Quest 2) AppleWebKit/537.36 (KHTML, like Gecko) OculusBrowser/15.0.0.0.22 Mobile Safari/537.36",
+                "Accept": "*/*",
                 "Accept-Language": "en-US,en;q=0.9",
             }
         }
