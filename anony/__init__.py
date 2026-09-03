@@ -7,13 +7,13 @@ from config import Config
 config = Config()
 config.check()
 
-from anony.core.bot import Bot
+from .logging import logger
+
 from anony.core.dir import dirr
 from anony.core.git import git
-from anony.core.userbot import Userbot
 from anony.misc import dbb, heroku, sudo
-
-from .logging import logger
+from anony.core.bot import Bot
+from anony.core.userbot import Userbot
 
 dirr()
 git()
